@@ -15,7 +15,8 @@ class StoryProcessor:
     
     def get_llm_response(self, input_text: str) -> str:
         try:
-            response = self.llm.invoke(input_text)
+            Intro="The following stoty is for a tiktok video , re-create it like it happend to you in a 1 minute video, make it interesting as a story to hear"
+            response = self.llm.invoke(Intro+input_text)
             return response.content
         except Exception as e:
             raise RuntimeError(f"Error getting LLM response: {str(e)}")
