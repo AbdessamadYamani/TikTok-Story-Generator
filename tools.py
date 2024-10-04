@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
-from PIL.ImageFont import FreeTypeFont  # Add this import for correct type annotation
+from PIL.ImageFont import FreeTypeFont
 from pathlib import Path
 from typing import List, Tuple, Dict
 from LLM import StoryProcessor
@@ -8,10 +8,36 @@ class MediaProcessor:
     def __init__(self):
         self.base_path = Path(__file__).parent
         self.story_processor = StoryProcessor()
-        self.fonts: Dict[str, FreeTypeFont] = {
-            'regular': ImageFont.truetype("arial.ttf", 18),
-            'bold': ImageFont.truetype("arialbd.ttf", 24)
-        }
+        self.fonts: Dict[str, FreeTypeFont] = self._initialize_fonts()
+
+    def _initialize_fonts(self) -> Dict[str, FreeTypeFont]:
+        try:
+            # Try common Linux font paths
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+                # Add more potential paths if needed
+            ]
+            
+            # Try to find a valid font
+            for font_path in font_paths:
+                if Path(font_path).exists():
+                    return {
+                        'regular': ImageFont.truetype(font_path, 18),
+                        'bold': ImageFont.truetype(font_path, 24)
+                    }
+            
+            # If no system fonts are found, use default font
+            return {
+                'regular': ImageFont.load_default(),
+                'bold': ImageFont.load_default()
+            }
+        except Exception as e:
+            print(f"Error loading fonts: {str(e)}")
+            return {
+                'regular': ImageFont.load_default(),
+                'bold': ImageFont.load_default()
+            }
 
     def clean_string(self, text: str) -> str:
         return text.strip().strip('"\'').replace("\n", "")
@@ -54,20 +80,11 @@ class MediaProcessor:
             # Get text content
             title = self.clean_string(self.story_processor.get_story_title(input_text))
             summary = self.clean_string(self.story_processor.get_story_summary(input_text))
-            print(template_path)
-            print(summary)
-            print(title)
+
             # Process image
             with Image.open(template_path) as original_image:
                 resized_image, scale_factor = self.resize_image(original_image, 600)
                 draw = ImageDraw.Draw(resized_image)
-
-                # Scale fonts
-                for name, font in self.fonts.items():
-                    self.fonts[name] = ImageFont.truetype(
-                        font.path, 
-                        int(font.size * scale_factor)
-                    )
 
                 # Add text to image
                 draw.text((50, 10), "Scary stories", font=self.fonts['regular'], fill="white")
